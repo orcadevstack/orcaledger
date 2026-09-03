@@ -1,0 +1,6 @@
+mux.Handle("/auth/", proxy("http://auth-service"))
+mux.Handle("/wallet/", proxy("http://wallet-service"))
+mux.Handle("/payments/", proxy("http://payments-service"))
+mux.Handle("/fx/", proxy("http://fx-service"))
+mux.Handle("/kyc/", proxy("http://kyc-service"))
+mux.Handle("/ledger/", proxy("http://ledger-service"))

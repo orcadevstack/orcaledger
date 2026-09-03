@@ -1,0 +1,43 @@
+name: orcaledger-ci-cd
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: "1.22"
+
+    - name: Build all services
+      run: |
+        for svc in services-go/*; do
+          cd $svc
+          go build .
+          cd ../..
+        done
+
+    - name: Build Docker images
+      run: |
+        for svc in services-go/*; do
+          docker build -t orcaledger/$(basename $svc):latest $svc
+        done
+
+    - name: Push to registry
+      run: |
+        for svc in services-go/*; do
+          docker push orcaledger/$(basename $svc):latest
+        done
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Apply Kubernetes manifests
+      run: kubectl apply -f infrastructure/kubernetes/
