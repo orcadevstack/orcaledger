@@ -4,7 +4,8 @@
 #include <unistd.h>
 
 #include "ledger.grpc-c.h"   // generated from ledger.proto
-#include "ledger.h"          // your internal ledger API
+#include "ledger.h"
+#include "db.h"
 
 static grpc_c_server_t *ledger_server;
 
@@ -17,22 +18,29 @@ static void sigint_handler(int sig) {
     exit(0);
 }
 
-/* Callback invoked when PostTransaction RPC is called */
+/* RPC callback: PostTransaction */
 void ledger__LedgerService__PostTransaction_cb(grpc_c_context_t *context) {
-    ledger__TransactionRequest *req;
+    ledger__PostTransactionRequest *req;
 
     /* Read incoming request */
     if (context->gcc_stream->read(context, (void **)&req, 0, -1)) {
-        fprintf(stderr, "Failed to read TransactionRequest\n");
+        fprintf(stderr, "[gRPC] Failed to read PostTransactionRequest\n");
         exit(1);
     }
 
-    /* Call your internal ledger logic */
-    int rc = post_transaction(req->tx_id, req->debit, req->credit);
+    printf("[gRPC] Received transaction: %s\n", req->tx_id);
+
+    /* Call internal ledger logic */
+    int rc = post_transaction(
+        req->tx_id,
+        req->debit_account,
+        req->credit_account,
+        req->amount
+    );
 
     /* Build response */
-    ledger__TransactionResponse resp;
-    ledger__transaction_response__init(&resp);
+    ledger__PostTransactionResponse resp;
+    ledger__post_transaction_response__init(&resp);
 
     if (rc == 0) {
         resp.success = 1;
@@ -44,16 +52,16 @@ void ledger__LedgerService__PostTransaction_cb(grpc_c_context_t *context) {
 
     /* Write response */
     if (context->gcc_stream->write(context, &resp, 0, -1)) {
-        fprintf(stderr, "Failed to write TransactionResponse\n");
+        fprintf(stderr, "[gRPC] Failed to write PostTransactionResponse\n");
         exit(1);
     }
 
     /* Finish RPC */
     grpc_c_status_t status;
-    status.gcs_code = 0;  // OK
+    status.gcs_code = 0;
 
     if (context->gcc_stream->finish(context, &status, 0)) {
-        fprintf(stderr, "Failed to finish RPC\n");
+        fprintf(stderr, "[gRPC] Failed to finish RPC\n");
         exit(1);
     }
 }
@@ -67,20 +75,26 @@ int main(int argc, char **argv) {
 
     signal(SIGINT, sigint_handler);
 
+    /* Initialize PostgreSQL */
+    if (ledger_init_db("host=localhost dbname=orcaledger user=orca password=orca") != 0) {
+        fprintf(stderr, "[LEDGER] Failed to initialize DB\n");
+        exit(1);
+    }
+
     /* Initialize gRPC-C */
     grpc_c_init(GRPC_THREADS, NULL);
 
     /* Create server */
     ledger_server = grpc_c_server_create(argv[1], NULL, NULL);
     if (!ledger_server) {
-        fprintf(stderr, "Failed to create ledger gRPC server\n");
+        fprintf(stderr, "[gRPC] Failed to create ledger server\n");
         exit(1);
     }
 
     /* Listen on TCP port */
     grpc_c_server_add_insecure_http2_port(ledger_server, "0.0.0.0:50051");
 
-    /* Initialize LedgerService (generated function) */
+    /* Register LedgerService */
     ledger__LedgerService__service_init(ledger_server);
 
     /* Start server */

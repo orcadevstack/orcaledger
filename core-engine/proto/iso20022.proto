@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package iso20022;
+
+service Iso20022Service {
+  rpc BuildPain001 (Pain001Request) returns (PaymentMessage);
+  rpc BuildPacs008 (Pacs008Request) returns (PaymentMessage);
+  rpc Parse (XmlMessage) returns (PaymentMessage);
+}
+
+message Pain001Request {
+  string debtor_name = 1;
+  string debtor_iban = 2;
+  string creditor_name = 3;
+  string creditor_iban = 4;
+  string currency = 5;
+  string amount = 6;
+}
+
+message Pacs008Request {
+  string debtor_iban = 1;
+  string creditor_iban = 2;
+  string currency = 3;
+  string amount = 4;
+}
+
+message XmlMessage {
+  string xml = 1;
+}
+
+message PaymentMessage {
+  string msg_id = 1;
+  string debtor_iban = 2;
+  string creditor_iban = 3;
+  string currency = 4;
+  string amount = 5;
+}

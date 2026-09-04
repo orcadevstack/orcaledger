@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package iso8583;
+
+service Iso8583Service {
+  rpc BuildAuth (AuthRequest) returns (IsoMessage);
+  rpc BuildFinancial (FinancialRequest) returns (IsoMessage);
+  rpc Parse (RawMessage) returns (IsoMessage);
+}
+
+message AuthRequest {
+  string pan = 1;
+  string amount = 2;
+  string stan = 3;
+}
+
+message FinancialRequest {
+  string pan = 1;
+  string amount = 2;
+  string stan = 3;
+}
+
+message RawMessage {
+  bytes data = 1;
+}
+
+message IsoMessage {
+  string mti = 1;
+  map<int32, string> fields = 2;
+}

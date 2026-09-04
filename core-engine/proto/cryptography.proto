@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package cryptography;
+
+service CryptoService {
+  rpc Sha256 (Sha256Request) returns (Sha256Response);
+  rpc Sign (SignRequest) returns (SignResponse);
+  rpc Verify (VerifyRequest) returns (VerifyResponse);
+}
+
+message Sha256Request {
+  bytes data = 1;
+}
+
+message Sha256Response {
+  bytes hash = 1;
+}
+
+message SignRequest {
+  bytes private_key = 1;
+  bytes message = 2;
+}
+
+message SignResponse {
+  bytes signature = 1;
+}
+
+message VerifyRequest {
+  bytes public_key = 1;
+  bytes message = 2;
+  bytes signature = 3;
+}
+
+message VerifyResponse {
+  bool valid = 1;
+}

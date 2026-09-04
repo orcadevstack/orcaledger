@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package accounts;
+
+service AccountsService {
+  rpc CreateAccount (CreateAccountRequest) returns (AccountResponse);
+  rpc FreezeAccount (AccountIdRequest) returns (AccountResponse);
+  rpc CloseAccount (AccountIdRequest) returns (AccountResponse);
+  rpc GetAccount (AccountIdRequest) returns (AccountResponse);
+}
+
+message CreateAccountRequest {
+  string id = 1;
+  string owner_id = 2;
+  string currency = 3;
+}
+
+message AccountIdRequest {
+  string id = 1;
+}
+
+message AccountResponse {
+  string id = 1;
+  string owner_id = 2;
+  string currency = 3;
+  int32 status = 4; // 0 active, 1 frozen, 2 closed
+}
